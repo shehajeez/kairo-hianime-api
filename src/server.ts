@@ -1,32 +1,34 @@
 import https from "https";
 import { config } from "dotenv";
-
-import corsConfig from "./config/cors.js";
 import { ratelimit } from "./config/ratelimit.js";
-
 import { hianimeRouter } from "./routes/hianime.js";
-
 import { serveStatic } from "@hono/node-server/serve-static";
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { logger } from "hono/logger";
-
+import { cors } from 'hono/cors'
 import { HiAnimeError } from "aniwatch";
 
 config();
 
-const BASE_PATH = "/api/v2" as const;
-const PORT: number = Number(process.env.ANIWATCH_API_PORT) || 4000;
+const BASE_PATH = "/api/v2";
+const PORT = Number(process.env.ANIWATCH_API_PORT) || 4000;
 const ANIWATCH_API_HOSTNAME = process.env?.ANIWATCH_API_HOSTNAME;
 
 const app = new Hono();
 
 app.use(logger());
-app.use(corsConfig);
 
-// CAUTION: For personal deployments, "refrain" from having an env
-// named "ANIWATCH_API_HOSTNAME". You may face rate limitting
-// or other issues if you do.
+// fixed up cors config
+app.use('*', cors({
+  origin: '*',
+  allowMethods: ['GET', 'POST', 'OPTIONS'],
+  allowHeaders: ['Content-Type', 'Authorization'],
+  exposeHeaders: ['Content-Length'],
+  maxAge: 600,
+  credentials: true,
+}))
+
 const ISNT_PERSONAL_DEPLOYMENT = Boolean(ANIWATCH_API_HOSTNAME);
 if (ISNT_PERSONAL_DEPLOYMENT) {
   app.use(ratelimit);
@@ -56,7 +58,6 @@ app.onError((err, c) => {
   return c.json(res, { status: res.status });
 });
 
-// NOTE: this env is "required" for vercel deployments
 if (!Boolean(process?.env?.ANIWATCH_API_VERCEL_DEPLOYMENT)) {
   serve({
     port: PORT,
@@ -67,11 +68,9 @@ if (!Boolean(process?.env?.ANIWATCH_API_VERCEL_DEPLOYMENT)) {
     )
   );
 
-  // NOTE: remove the `if` block below for personal deployments
   if (ISNT_PERSONAL_DEPLOYMENT) {
-    const interval = 9 * 60 * 1000; // 9mins
+    const interval = 9 * 60 * 1000;
 
-    // don't sleep
     setInterval(() => {
       console.log("aniwatch-api HEALTH_CHECK at", new Date().toISOString());
       https
@@ -83,4 +82,4 @@ if (!Boolean(process?.env?.ANIWATCH_API_VERCEL_DEPLOYMENT)) {
   }
 }
 
-export default app;
+export default app
