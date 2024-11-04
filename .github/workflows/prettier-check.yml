@@ -1,4 +1,4 @@
-name: "Run Tests"
+name: "Prettier Check"
 
 on:
   push:
@@ -7,11 +7,11 @@ on:
     branches: ["main"]
 
 jobs:
-  run_tests:
+  lint_check:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v4
 
       - name: Setup NodeJS
@@ -19,8 +19,8 @@ jobs:
         with:
           node-version: "22.x"
 
-      - name: Install dependencies
+      - name: Install deps
         run: npm i
 
-      - name: Run all tests
-        run: npm test
+      - name: Check lint
+        run: npm run lint:ci
