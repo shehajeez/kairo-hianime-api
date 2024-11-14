@@ -1119,7 +1119,7 @@ console.log(data);
       },
       {...}
     ],
-    subtitles: [
+    tracks: [
       {
         lang: "English",
         url: string, // .vtt subtitle file
