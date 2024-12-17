@@ -1,13 +1,12 @@
 import https from "https";
 import { config } from "dotenv";
 
-import corsConfig from "./config/cors.js";
 import { ratelimit } from "./config/ratelimit.js";
-
 import { hianimeRouter } from "./routes/hianime.js";
 
 import { Hono } from "hono";
 import { logger } from "hono/logger";
+import { cors } from "hono/cors"; // Use Hono's CORS middleware
 import { serve } from "@hono/node-server";
 import { serveStatic } from "@hono/node-server/serve-static";
 
@@ -24,11 +23,18 @@ const ANIWATCH_API_HOSTNAME = process.env?.ANIWATCH_API_HOSTNAME;
 const app = new Hono<{ Variables: AniwatchAPIVariables }>();
 
 app.use(logger());
-app.use(corsConfig);
 
-// CAUTION: For personal deployments, "refrain" from having an env
-// named "ANIWATCH_API_HOSTNAME". You may face rate limitting
-// or other issues if you do.
+// Fix CORS implementation
+app.use(
+  cors({
+    origin: "*",
+    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowHeaders: ["Content-Type", "Authorization", "x-api-key"],
+    maxAge: 600,
+  })
+);
+
+// Rate limiting for non-personal deployments
 const ISNT_PERSONAL_DEPLOYMENT = Boolean(ANIWATCH_API_HOSTNAME);
 if (ISNT_PERSONAL_DEPLOYMENT) {
   app.use(ratelimit);
